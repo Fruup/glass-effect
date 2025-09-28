@@ -12,6 +12,7 @@ uniform int i_blur_radius;
 uniform vec4 i_background_color;
 uniform float i_background_color_mix;
 uniform float i_lense_flatness;
+uniform float i_lense_height; // [0, 1]
 
 uniform sampler2D u_texture;
 
@@ -61,7 +62,8 @@ vec3 lense_normal(vec2 r, vec2 bounds, float rim_size, out bool is_inside) {
 
 	is_inside = true;
 
-	return normalize(vec3(-displacement, pow(length(displacement), i_lense_flatness) - 1.0f));
+	// return normalize(-vec3(displacement, i_lense_flatness + i_lense_height * (1.0f - length(displacement))));
+	return normalize(-vec3(displacement, 1.0f - pow(length(displacement), i_lense_flatness)));
 }
 
 void main() {
@@ -101,7 +103,8 @@ void main() {
 	return;
 #endif
 
-	vec3 refracted_ray = refract(vec3(0.0f, 0.0f, 1.0f), normal, 1.0f / 1.5f);
+	float eta = 1.0f / 1.5f; // TODO: This should be configurable
+	vec3 refracted_ray = refract(vec3(0.0f, 0.0f, 1.0f), normal, eta);
 	vec2 uv_offset = -refracted_ray.xy / refracted_ray.z;
 	// vec2 uv_offset = -refraction_strength * refracted_ray.xy / refracted_ray.z;
 	// uv_offset.y *= -1.0f;

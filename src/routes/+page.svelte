@@ -9,7 +9,8 @@
 		backgroundColor: [1, 1, 1, 1],
 		backgroundColorMix: 0.5,
 		blurRadius: 2,
-		flatness: 15,
+		lenseFlatness: 15,
+		// lenseHeight: 1,
 	});
 </script>
 
@@ -35,6 +36,7 @@
 		<img src="https://picsum.photos/id/239/3000/3000" />
 		<img src="https://picsum.photos/id/240/3000/3000" />
 		<img src="https://picsum.photos/id/241/3000/3000" />
+		<img src="/images/ios.png" />
 		om t. interrupt km l auf ter assign wherewith oder ed. o. apr pf bean administer fill j. outweighs
 		aft fo fer im upper don mm brain info q format aa og parameter therefrom</span
 	>

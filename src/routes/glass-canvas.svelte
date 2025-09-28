@@ -58,8 +58,13 @@
 
 				ctx.gl.uniform1f(
 					ctx.gl.getUniformLocation(ctx.program, 'i_lense_flatness'),
-					config.flatness,
+					config.lenseFlatness,
 				);
+
+				// ctx.gl.uniform1f(
+				// 	ctx.gl.getUniformLocation(ctx.program, 'i_lense_height'),
+				// 	config.lenseHeight,
+				// );
 
 				ctx.gl.uniform1i(
 					ctx.gl.getUniformLocation(ctx.program, 'i_blur_radius'),
@@ -104,9 +109,10 @@
 		for (let i = 0; i < imageData.data.length; i += 4) {
 			if (imageData.data[i + 3] < 250) continue;
 
-			// TODO: better luminance calculation
-			luminance +=
-				(imageData.data[i + 0] + imageData.data[i + 1] + imageData.data[i + 2]) / (255 * 3);
+			const r = imageData.data[i + 0] / 255;
+			const g = imageData.data[i + 1] / 255;
+			const b = imageData.data[i + 2] / 255;
+			luminance += 0.2126 * r + 0.7152 * g + 0.0722 * b;
 		}
 
 		luminance /= imageData.data.length / 4;

@@ -46,13 +46,19 @@
 
 	<Label>
 		Background Color Mix
-		<Slider type="single" bind:value={config.backgroundColorMix} min={0} max={1} step={0.01} />
+		<Slider type="single" bind:value={config.backgroundColorMix} min={0} max={1} step={0.001} />
 		{Math.round(config.backgroundColorMix * 100)}%
 	</Label>
 
 	<Label>
 		Lense Flatness
-		<Slider type="single" bind:value={config.flatness} min={0} max={30} step={0.01} />
-		{config.flatness}
+		<Slider type="single" bind:value={config.lenseFlatness} min={0} max={30} step={0.001} />
+		{config.lenseFlatness}
 	</Label>
+
+	<!-- <Label>
+		Lense Height
+		<Slider type="single" bind:value={config.lenseHeight} min={0} max={1} step={0.001} />
+		{config.lenseHeight}
+	</Label> -->
 </div>
