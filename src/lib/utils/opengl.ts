@@ -98,6 +98,9 @@ export function setup(canvas: HTMLCanvasElement) {
 
 	return {
 		gl,
+		program,
+		vertexShader,
+		fragmentShader,
 		// setMousePosition() {},
 		setTexture(image: TexImageSource) {
 			if (currentTexture) gl.deleteTexture(currentTexture);

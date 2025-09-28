@@ -8,11 +8,15 @@ uniform vec2 i_resolution;
 uniform vec2 i_mouse_position;
 uniform vec2 i_uv;
 
+uniform int i_blur_radius;
+uniform vec4 i_background_color;
+uniform float i_background_color_mix;
+uniform float i_lense_flatness;
+
 uniform sampler2D u_texture;
 
 // const float lense_flatness = 1.0f;
 // const float lense_flatness = 7.0f;
-const float lense_flatness = 15.0f;
 
 const float lense_rim_size = 1.0f;
 const float lense_border_radius = 1.0f;
@@ -57,7 +61,7 @@ vec3 lense_normal(vec2 r, vec2 bounds, float rim_size, out bool is_inside) {
 
 	is_inside = true;
 
-	return normalize(vec3(-displacement, pow(length(displacement), lense_flatness) - 1.0f));
+	return normalize(vec3(-displacement, pow(length(displacement), i_lense_flatness) - 1.0f));
 }
 
 void main() {
@@ -123,23 +127,25 @@ void main() {
 
 #if 1
 		// blur
-	const int N = 10;
-	float sum = 0.0f;
-	vec3 blur = vec3(0.0f);
+	int N = i_blur_radius;
+	if(N > 0) {
+		float sum = 0.0f;
+		vec3 blur = vec3(0.0f);
 
-	for(int i = -N; i < N; i++) {
-		for(int j = -N; j < N; j++) {
-			float factor = exp(-(float(i * i + j * j)) / float(N * N) * 4.0f);
-			sum += factor;
+		for(int i = -N; i < N; i++) {
+			for(int j = -N; j < N; j++) {
+				float factor = exp(-(float(i * i + j * j)) / float(N * N) * 4.0f);
+				sum += factor;
 
-			blur += factor * texture(u_texture, uv + vec2(i, j) / bg_resolution).xyz;
+				blur += factor * texture(u_texture, uv + vec2(i, j) / bg_resolution).xyz;
+			}
 		}
-	}
 
-	col = blur / sum;
+		col = blur / sum;
+	}
 #endif
 
-	col = mix(col, vec3(1.0f), 0.5f);
+	col = mix(col, i_background_color.rgb, i_background_color_mix);
 
 	outColor = vec4(col, 1.0f);
 }

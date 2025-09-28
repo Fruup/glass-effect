@@ -4,12 +4,15 @@
 	import { debounce, throttle } from '$lib/utils/index.svelte';
 	import { setup } from '$lib/utils/opengl';
 	import { fade } from 'svelte/transition';
+	import type { Config } from './config';
 
 	let {
+		config,
 		width,
 		height,
 		onColorSchemeChange,
 	}: {
+		config: Config;
 		width: number;
 		height: number;
 		onColorSchemeChange?: (scheme: 'light' | 'dark') => any;
@@ -41,6 +44,26 @@
 				ctx.setUV(
 					dpr * (window.scrollX + canvasRect.x),
 					dpr * (bodyRect.height - (window.scrollY + canvasRect.y + canvasRect.height)),
+				);
+
+				ctx.gl.uniform4f(
+					ctx.gl.getUniformLocation(ctx.program, 'i_background_color'),
+					...config.backgroundColor,
+				);
+
+				ctx.gl.uniform1f(
+					ctx.gl.getUniformLocation(ctx.program, 'i_background_color_mix'),
+					config.backgroundColorMix,
+				);
+
+				ctx.gl.uniform1f(
+					ctx.gl.getUniformLocation(ctx.program, 'i_lense_flatness'),
+					config.flatness,
+				);
+
+				ctx.gl.uniform1i(
+					ctx.gl.getUniformLocation(ctx.program, 'i_blur_radius'),
+					config.blurRadius,
 				);
 
 				ctx.draw();

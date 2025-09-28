@@ -1,14 +1,19 @@
 <script lang="ts">
-	import type { TransitionConfig } from 'svelte/transition';
+	import type { Config } from './config';
 	import ConfigPanel from './config-panel.svelte';
 	import GlassCanvas from './glass-canvas.svelte';
 
 	const canvasSize = { width: 150, height: 50 };
 
-	let visible = $state(true);
+	let config = $state<Config>({
+		backgroundColor: [1, 1, 1, 1],
+		backgroundColorMix: 0.5,
+		blurRadius: 2,
+		flatness: 15,
+	});
 </script>
 
-<!-- <ConfigPanel bind:config /> -->
+<ConfigPanel bind:config />
 
 <div class="page">
 	of in for with as that on by from at if than about into between after because through over like
@@ -27,9 +32,9 @@
 	introduction iff diameter no. <span class="text-orange-300"
 		>ar u. bypass nf orientation afterwards ix betwixt oxide ofa preheat donor transfer thro
 		forthwith adjust asunder thereupon ip
-		<!-- <img src="https://picsum.photos/id/239/3000/3000" /> -->
-		<!-- <img src="https://picsum.photos/id/240/3000/3000" /> -->
-		<!-- <img src="https://picsum.photos/id/241/3000/3000" /> -->
+		<img src="https://picsum.photos/id/239/3000/3000" />
+		<img src="https://picsum.photos/id/240/3000/3000" />
+		<img src="https://picsum.photos/id/241/3000/3000" />
 		om t. interrupt km l auf ter assign wherewith oder ed. o. apr pf bean administer fill j. outweighs
 		aft fo fer im upper don mm brain info q format aa og parameter therefrom</span
 	>
@@ -56,6 +61,7 @@
 >
 	<button class="group relative w-fit transition-all hover:scale-105">
 		<GlassCanvas
+			{config}
 			width={canvasSize.width}
 			height={canvasSize.height}
 			onColorSchemeChange={(scheme) => {
