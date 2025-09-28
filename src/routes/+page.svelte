@@ -3,6 +3,8 @@
 	import fragmentShaderSource from '$lib/shaders/fragment.glsl?raw';
 	import { onDestroy, onMount } from 'svelte';
 	import { toCanvas } from 'html-to-image';
+	import { debounce } from '$lib/utils/index.svelte';
+	import { resolve } from '$app/paths';
 
 	let canvas = $state() as HTMLCanvasElement;
 
@@ -130,27 +132,26 @@
 
 		function frame() {
 			frameId = requestAnimationFrame(() => {
+				const dpr = window.devicePixelRatio;
+
 				gl.uniform2f(
 					gl.getUniformLocation(program, 'i_mouse_position'),
-					4 * mousePosition.x,
-					4 * mousePosition.y,
+					dpr * mousePosition.x,
+					dpr * mousePosition.y,
 				);
 
 				const canvasRect = canvas.getBoundingClientRect();
 				const bodyRect = document.body.getBoundingClientRect();
-				const dpr = window.devicePixelRatio;
 
 				gl.uniform2f(
 					gl.getUniformLocation(program, 'i_uv'),
-					window.scrollX + 2 * canvasRect.x,
-					2 * (bodyRect.height - (window.scrollY + canvasRect.y + canvasRect.height)),
+					dpr * (window.scrollX + canvasRect.x * 1.00001 - 1.5),
+					dpr * (bodyRect.height - (window.scrollY + canvasRect.y + canvasRect.height)),
 				);
 
 				// draw
 				const primitiveType = gl.TRIANGLE_FAN;
-				var offset = 0;
-				const count = 4;
-				gl.drawArrays(primitiveType, offset, count);
+				gl.drawArrays(primitiveType, /* offset */ 0, /* count */ 4);
 
 				frame();
 			});
@@ -165,11 +166,8 @@
 
 	let mousePosition = { x: 0, y: 0 };
 	let pageCanvas: HTMLCanvasElement | undefined;
-</script>
 
-<button
-	class="absolute"
-	onclick={async () => {
+	async function _resetImage() {
 		console.log('CAPTURING...');
 		console.time('capture');
 
@@ -178,8 +176,8 @@
 
 		pageCanvas = await toCanvas(
 			// document.body,
-			// document.querySelector<HTMLElement>('.page')!,
-			document.querySelector<HTMLElement>('#app')!,
+			document.querySelector<HTMLElement>('.page')!,
+			// document.querySelector<HTMLElement>('#app')!,
 			{
 				filter: (node) => {
 					if (typeof node.hasAttribute !== 'function') return true;
@@ -192,7 +190,7 @@
 				// pixelRatio: window.devicePixelRatio,
 				skipAutoScale: true,
 				style: {
-					paddingRight: '10px',
+					// paddingRight: '10px',
 				},
 				backgroundColor: 'white',
 			},
@@ -203,8 +201,7 @@
 		img.src = pageCanvas.toDataURL();
 		await new Promise((r) => img.addEventListener('load', r));
 
-		window.open(URL.createObjectURL(await fetch(img.src).then((r) => r.blob())), 'blank');
-
+		// window.open(URL.createObjectURL(await fetch(img.src).then((r) => r.blob())), 'blank');
 		console.log(img.src, img.width, img.height);
 
 		const texture = gl.createTexture();
@@ -213,19 +210,50 @@
 		// gl.generateMipmap(gl.TEXTURE_2D);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, texture);
 		gl.uniform1i(gl.getUniformLocation(program, 'u_texture'), 0);
-	}}>CAPTURE</button
->
+	}
+
+	const resetImage = debounce(_resetImage, { wait: 500 });
+
+	onMount(() => {
+		// resetImage.immediate();
+	});
+
+	const canvasSize = { width: 150, height: 50 };
+
+	new MutationObserver(async () => {
+		// Wait for all images to be loaded
+		await Promise.all(
+			Array.from(document.querySelectorAll<HTMLImageElement>('img')).map(async (img) => {
+				if (img.complete) return;
+
+				const { resolve, promise } = Promise.withResolvers<void>();
+				img.onload = () => resolve();
+
+				return promise;
+			}),
+		);
+
+		resetImage();
+	}).observe(document.body, {
+		subtree: true,
+		childList: true,
+		characterData: true,
+	});
+</script>
+
+<!-- <button class="absolute" onclick={resetImage}>CAPTURE</button> -->
 
 <svelte:window
 	onmousemove={(e) => {
 		mousePosition = { x: e.clientX, y: e.clientY };
 	}}
+	onresize={resetImage}
 />
 
 <div class="page">
@@ -244,9 +272,9 @@
 	ooo to ibid. perform iu layout s. accept intake abreast ion heat therewith inferior l.
 	introduction iff diameter no. <span class="text-orange-300"
 		>ar u. bypass nf orientation afterwards ix betwixt oxide ofa preheat donor transfer thro
-		forthwith adjust asunder thereupon ip om t. interrupt km l auf ter assign wherewith oder ed. o.
-		apr pf bean administer fill j. outweighs aft fo fer im upper don mm brain info q format aa og
-		parameter therefrom</span
+		forthwith adjust asunder thereupon ip <img src="https://picsum.photos/id/239/3000/3000" /> om t.
+		interrupt km l auf ter assign wherewith oder ed. o. apr pf bean administer fill j. outweighs aft
+		fo fer im upper don mm brain info q format aa og parameter therefrom</span
 	>
 	eat ie iii attach autumn maintain tablespoon x. position onset beat pp brief io identifier k e. offish
 	tn jn afterward min monitor afar outdoor saith ahout leaf intercept pepper allow noun favour k. w.
@@ -265,7 +293,27 @@
 	<div>NESTED??</div>
 </div>
 
-<div data-no-capture class="pointer-events-none fixed inset-0 grid place-content-center">
-	<canvas bind:this={canvas} class="h-[100px] w-[300px] outline-red-400" width="600" height="200"
-	></canvas>
+<div
+	data-no-capture
+	class="pointer-events-none fixed inset-0 grid place-content-center *:pointer-events-auto"
+>
+	<button class="relative w-fit transition-all hover:scale-105">
+		<canvas
+			bind:this={canvas}
+			class="outline-red-400"
+			width={canvasSize.width * window.devicePixelRatio}
+			height={canvasSize.height * window.devicePixelRatio}
+			style="width: {canvasSize.width}px; height: {canvasSize.height}px"
+		></canvas>
+
+		<div
+			class="absolute inset-0 grid place-content-center rounded-full border-[0.5px] border-zinc-100 font-[SUSE_Mono] text-zinc-700 shadow-lg"
+		>
+			Hello World!
+		</div>
+	</button>
 </div>
+
+<style>
+	@import url('https://fonts.googleapis.com/css2?family=SUSE+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+</style>
