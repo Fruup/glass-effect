@@ -10,10 +10,12 @@
 	} = $props();
 </script>
 
-<div class="fixed top-0 right-0 m-4 rounded-xl border bg-white p-4 shadow-xl">
+<div
+	class="fixed right-0 bottom-0 m-4 rounded-xl border bg-white p-4 opacity-10 shadow-xl transition-opacity hover:opacity-100"
+>
 	<Label>
 		Blur Radius [px]
-		<Slider type="single" bind:value={config.blurRadius} min={0} max={16} step={1} />
+		<Slider type="single" bind:value={config.blurRadius} min={0} max={10} step={1} />
 		{config.blurRadius}px
 	</Label>
 

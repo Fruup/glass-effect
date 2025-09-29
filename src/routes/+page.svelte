@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { vanish } from '$lib/utils/index.svelte';
 	import type { Config } from './config';
 	import ConfigPanel from './config-panel.svelte';
 	import GlassCanvas from './glass-canvas.svelte';
@@ -12,6 +13,8 @@
 		lenseFlatness: 15,
 		// lenseHeight: 1,
 	});
+
+	let show = $state(true);
 </script>
 
 <ConfigPanel bind:config />
@@ -33,12 +36,19 @@
 	introduction iff diameter no. <span class="text-orange-300"
 		>ar u. bypass nf orientation afterwards ix betwixt oxide ofa preheat donor transfer thro
 		forthwith adjust asunder thereupon ip
-		<img src="https://picsum.photos/id/239/3000/3000" />
-		<img src="https://picsum.photos/id/240/3000/3000" />
-		<img src="https://picsum.photos/id/241/3000/3000" />
-		<img src="/images/ios.png" />
-		om t. interrupt km l auf ter assign wherewith oder ed. o. apr pf bean administer fill j. outweighs
-		aft fo fer im upper don mm brain info q format aa og parameter therefrom</span
+		<!-- <img src="https://picsum.photos/id/239/3000/3000" /> -->
+		<!-- <img src="https://picsum.photos/id/240/3000/3000" /> -->
+		<!-- <img src="https://picsum.photos/id/241/3000/3000" /> -->
+		<!-- <img src="/images/ios.png" /> -->
+
+		<img src="https://picsum.photos/id/26/4209/2769" />
+		<img src="https://picsum.photos/id/20/3670/2462" />
+		<img src="https://picsum.photos/id/36/4179/2790" />
+		<img src="https://picsum.photos/id/40/4106/2806" />
+		<img src="https://picsum.photos/id/110/5000/3333" />
+
+		om t. interrupt km l auf ter assign wherewith oder ed. o. apr pf bean administer fill j.
+		outweighs aft fo fer im upper don mm brain info q format aa og parameter therefrom</span
 	>
 	eat ie iii attach autumn maintain tablespoon x. position onset beat pp brief io identifier k e. offish
 	tn jn afterward min monitor afar outdoor saith ahout leaf intercept pepper allow noun favour k. w.
@@ -57,29 +67,47 @@
 	<div>NESTED??</div>
 </div>
 
-<div
-	data-no-capture
-	class="pointer-events-none fixed inset-0 grid place-content-center *:pointer-events-auto"
->
-	<button class="group relative w-fit transition-all hover:scale-105">
-		<GlassCanvas
-			{config}
-			width={canvasSize.width}
-			height={canvasSize.height}
-			onColorSchemeChange={(scheme) => {
-				console.log(scheme);
+<div data-no-capture class="pointer-events-none fixed inset-0">
+	<div class="absolute inset-4 bottom-auto h-20 rounded-full shadow-2xl">
+		<GlassCanvas {config} />
 
-				document.querySelector('#glass-button-content')?.setAttribute('data-color-scheme', scheme);
-			}}
-		/>
+		<div class="absolute inset-0 grid place-content-center">SOME CONTENT</div>
+	</div>
 
-		<div
-			id="glass-button-content"
-			class="absolute inset-0 grid place-content-center rounded-full border-[0.5px] border-zinc-100 font-[SUSE_Mono] shadow-lg transition-colors duration-500 data-[color-scheme=dark]:text-zinc-100 data-[color-scheme=light]:text-zinc-700"
-		>
-			Hello World!
-		</div>
-	</button>
+	<div
+		data-no-capture
+		class="pointer-events-none absolute inset-0 grid place-content-center *:pointer-events-auto"
+	>
+		{#if show}
+			<button
+				transition:vanish={{ duration: 500 }}
+				class="group relative w-fit transition-all hover:scale-105"
+				onclick={() => {
+					show = false;
+					setTimeout(() => {
+						show = true;
+					}, 2000);
+				}}
+			>
+				<GlassCanvas
+					{config}
+					size={canvasSize}
+					onColorSchemeChange={(scheme) => {
+						document
+							.querySelector('#glass-button-content')
+							?.setAttribute('data-color-scheme', scheme);
+					}}
+				/>
+
+				<div
+					id="glass-button-content"
+					class="absolute inset-0 grid place-content-center rounded-full border-[0.5px] border-zinc-100 font-[SUSE_Mono] shadow-lg transition-colors duration-500 data-[color-scheme=dark]:text-zinc-100 data-[color-scheme=light]:text-zinc-700"
+				>
+					Hello World!
+				</div>
+			</button>
+		{/if}
+	</div>
 </div>
 
 <style>

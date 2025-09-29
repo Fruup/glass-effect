@@ -1,107 +1,104 @@
 <script lang="ts">
+	import { ElementSize } from 'runed';
 	import { onDestroy, onMount } from 'svelte';
-	import { toCanvas } from 'html-to-image';
-	import { debounce, throttle } from '$lib/utils/index.svelte';
 	import { setup } from '$lib/utils/opengl';
 	import { fade } from 'svelte/transition';
 	import type { Config } from './config';
+	import { cn } from '$lib/utils';
+	import { SharedState } from './state.svelte';
 
 	let {
 		config,
-		width,
-		height,
+		size,
 		onColorSchemeChange,
 	}: {
 		config: Config;
-		width: number;
-		height: number;
+		size?: { width: number; height: number };
 		onColorSchemeChange?: (scheme: 'light' | 'dark') => any;
 	} = $props();
 
-	let canvas = $state() as HTMLCanvasElement;
-	let pageCanvas: HTMLCanvasElement | undefined;
+	const sharedState = SharedState.get();
 
-	let loaded = $state(false);
+	let canvas = $state() as HTMLCanvasElement;
 
 	let frameId: number;
 	let ctx: ReturnType<typeof setup>;
 
-	let shouldComputePrimaryColor = false;
-
 	onMount(async () => {
+		console.log('BEFORE', containerSize?.getSize());
+		containerSize?.calculateSize();
+		console.log('AFTER', containerSize?.getSize());
+
+		if (containerSize) {
+			canvas.width = containerSize.width * window.devicePixelRatio;
+			canvas.height = containerSize.height * window.devicePixelRatio;
+		}
+
 		if (!canvas) throw new Error('Canvas not found');
 		ctx = setup(canvas);
 
-		function frame() {
-			frameId = requestAnimationFrame(() => {
-				const dpr = window.devicePixelRatio;
-
-				// ctx.setMousePosition()
-
-				const canvasRect = canvas.getBoundingClientRect();
-				const bodyRect = document.body.getBoundingClientRect();
-
-				ctx.setUV(
-					dpr * (window.scrollX + canvasRect.x),
-					dpr * (bodyRect.height - (window.scrollY + canvasRect.y + canvasRect.height)),
-				);
-
-				ctx.gl.uniform4f(
-					ctx.gl.getUniformLocation(ctx.program, 'i_background_color'),
-					...config.backgroundColor,
-				);
-
-				ctx.gl.uniform1f(
-					ctx.gl.getUniformLocation(ctx.program, 'i_background_color_mix'),
-					config.backgroundColorMix,
-				);
-
-				ctx.gl.uniform1f(
-					ctx.gl.getUniformLocation(ctx.program, 'i_lense_flatness'),
-					config.lenseFlatness,
-				);
-
-				// ctx.gl.uniform1f(
-				// 	ctx.gl.getUniformLocation(ctx.program, 'i_lense_height'),
-				// 	config.lenseHeight,
-				// );
-
-				ctx.gl.uniform1i(
-					ctx.gl.getUniformLocation(ctx.program, 'i_blur_radius'),
-					config.blurRadius,
-				);
-
-				ctx.draw();
-
-				if (shouldComputePrimaryColor) {
-					shouldComputePrimaryColor = false;
-
-					console.time('computeLuminance');
-
-					const img = new Image();
-					img.onload = () => {
-						computePrimaryColor(img);
-						console.timeEnd('computeLuminance');
-					};
-					img.src = canvas.toDataURL();
-				}
-
-				frame();
-			});
-		}
-
-		frame();
+		// Start render loop
+		renderLoop();
 	});
 
-	async function computePrimaryColor(img: HTMLImageElement) {
+	function renderLoop() {
+		frameId = requestAnimationFrame(() => {
+			const dpr = window.devicePixelRatio;
+			const canvasRect = canvas.getBoundingClientRect();
+			const bodyRect = document.body.getBoundingClientRect();
+
+			ctx.setUV(
+				dpr * (window.scrollX + canvasRect.x),
+				dpr * (bodyRect.height - (window.scrollY + canvasRect.y + canvasRect.height)),
+			);
+
+			ctx.gl.uniform4f(
+				ctx.gl.getUniformLocation(ctx.program, 'i_background_color'),
+				...config.backgroundColor,
+			);
+
+			ctx.gl.uniform1f(
+				ctx.gl.getUniformLocation(ctx.program, 'i_background_color_mix'),
+				config.backgroundColorMix,
+			);
+
+			ctx.gl.uniform1f(
+				ctx.gl.getUniformLocation(ctx.program, 'i_lense_flatness'),
+				config.lenseFlatness,
+			);
+
+			// ctx.gl.uniform1f(
+			// 	ctx.gl.getUniformLocation(ctx.program, 'i_lense_height'),
+			// 	config.lenseHeight,
+			// );
+
+			ctx.gl.uniform1i(ctx.gl.getUniformLocation(ctx.program, 'i_blur_radius'), config.blurRadius);
+
+			ctx.draw();
+
+			if (sharedState.getAndResetShouldComputeColorScheme()) {
+				const img = new Image();
+				img.onload = () => computeColorScheme(img);
+				img.src = canvas.toDataURL();
+			}
+
+			renderLoop();
+		});
+	}
+
+	$effect(() => {
+		if (sharedState.backgroundImage) {
+			ctx.setTexture(sharedState.backgroundImage);
+		}
+	});
+
+	async function computeColorScheme(img: HTMLImageElement) {
 		const tempCanvas = document.createElement('canvas');
 		const context = tempCanvas.getContext('2d')!;
 		tempCanvas.width = img.width;
 		tempCanvas.height = img.height;
 		context.drawImage(img, 0, 0);
 		const imageData = context.getImageData(0, 0, img.width, img.height);
-
-		console.log(imageData);
 
 		// TODO: non rgba?
 		let luminance = 0;
@@ -118,113 +115,40 @@
 		luminance /= imageData.data.length / 4;
 
 		onColorSchemeChange?.(luminance < 0.6 ? 'dark' : 'light');
-
-		console.log({ luminance });
 	}
 
 	onDestroy(() => {
 		cancelAnimationFrame(frameId);
 	});
 
-	async function _resetImage() {
-		console.log('CAPTURING...');
-		console.time('capture');
+	let container = $state() as HTMLDivElement;
 
-		const bodyRect = document.body.getBoundingClientRect();
-		console.log(bodyRect);
+	const containerSize = !size ? new ElementSize(() => container) : null;
 
-		pageCanvas = await toCanvas(
-			// document.body,
-			document.querySelector<HTMLElement>('.page')!,
-			// document.querySelector<HTMLElement>('#app')!,
-			{
-				filter: (node) => {
-					if (typeof node.hasAttribute !== 'function') return true;
-					return !node.hasAttribute('data-no-capture');
-				},
-				// canvasWidth: bodyRect.width - 100,
-				// canvasHeight: bodyRect.height,
-				width: bodyRect.width - 1, // don't know why -1 is needed, but text wrap is wrong otherwise
-				height: bodyRect.height,
-				// pixelRatio: window.devicePixelRatio,
-				skipAutoScale: true,
-				style: {
-					// paddingRight: '10px',
-				},
-				backgroundColor: getComputedStyle(document.body).backgroundColor,
-			},
-		);
-		console.timeEnd('capture');
-
-		const img = new Image();
-		img.src = pageCanvas.toDataURL();
-		await new Promise((r) => img.addEventListener('load', r));
-
-		console.log(img.src, img.width, img.height);
-
-		ctx.setTexture(img);
-
-		loaded = true;
-		shouldComputePrimaryColor = true;
-	}
-
-	const resetImage = debounce(_resetImage, { wait: 500 });
-
-	new MutationObserver(async () => {
-		// Wait for all images to be loaded
-		await Promise.all(
-			Array.from(document.querySelectorAll<HTMLImageElement>('img')).map(async (img) => {
-				if (img.complete) return;
-
-				const { resolve, promise } = Promise.withResolvers<void>();
-				img.onload = () => resolve();
-
-				return promise;
-			}),
-		);
-
-		resetImage();
-	}).observe(document.body, {
-		subtree: true,
-		childList: true,
-		characterData: true,
-	});
-
-	const throttledScroll = throttle(
-		() => {
-			shouldComputePrimaryColor = true;
-		},
-		{ wait: 200 },
+	const canvasSize: { width: number; height: number } = $derived(
+		size ? size : containerSize!.getSize(),
 	);
 </script>
 
-<svelte:window
-	onresize={resetImage}
-	onkeydown={(e) => {
-		if (e.key === 'p') {
-			shouldComputePrimaryColor = true;
-		}
-	}}
-	onscroll={() => throttledScroll()}
-/>
-
-<div class="relative w-fit overflow-clip rounded-full *:transition-opacity *:duration-500">
+<div
+	bind:this={container}
+	class={cn(
+		'relative overflow-clip rounded-full *:transition-opacity *:duration-500',
+		size ? 'size-fit' : 'size-full',
+	)}
+>
 	<canvas
 		bind:this={canvas}
-		width={width * window.devicePixelRatio}
-		height={height * window.devicePixelRatio}
-		style="width: {width}px; height: {height}px"
-		style:opacity={loaded ? 1 : 0}
+		width={canvasSize.width * window.devicePixelRatio}
+		height={canvasSize.height * window.devicePixelRatio}
+		style="width: {canvasSize.width}px; height: {canvasSize.height}px"
+		style:opacity={sharedState.loaded ? 1 : 0}
 	></canvas>
 
-	{#if !loaded}
+	{#if !sharedState.loaded}
 		<div
 			class="pointer-events-none absolute inset-0 backdrop-blur-xs"
-			out:fade={{ duration: 500 }}
+			transition:fade={{ duration: 500 }}
 		></div>
 	{/if}
 </div>
-
-<style>
-	@import url('https://fonts.googleapis.com/css2?family=SUSE+Mono:ital,wght@0,100..800;1,100..800&display=swap');
-</style>

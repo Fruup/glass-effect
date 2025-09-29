@@ -7,5 +7,5 @@
 		"**/Thumbs.db": true
 	},
 	"hide-files.files": [],
-	"cSpell.words": ["glsl"]
+	"cSpell.words": ["glsl", "opengl", "runed"]
 }

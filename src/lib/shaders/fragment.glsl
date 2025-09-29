@@ -128,6 +128,7 @@ void main() {
 	uv.y = 1.0f - uv.y;
 	vec3 col = texture(u_texture, uv).xyz;
 
+	// TODO: Blur image beforehand to improve performance
 #if 1
 		// blur
 	int N = i_blur_radius;
