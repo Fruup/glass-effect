@@ -43,13 +43,15 @@
 
 	function renderLoop() {
 		frameId = requestAnimationFrame(() => {
-			const dpr = window.devicePixelRatio;
 			const canvasRect = canvas.getBoundingClientRect();
-			const bodyRect = document.body.getBoundingClientRect();
+			const bodyRect = {
+				width: document.body.clientWidth,
+				height: document.body.clientHeight,
+			};
 
 			ctx.setUV(
-				dpr * (window.scrollX + canvasRect.x),
-				dpr * (bodyRect.height - (window.scrollY + canvasRect.y + canvasRect.height)),
+				(window.scrollX + canvasRect.x) / bodyRect.width,
+				(bodyRect.height - (window.scrollY + canvasRect.y + canvasRect.height)) / bodyRect.height,
 			);
 
 			ctx.gl.uniform4f(

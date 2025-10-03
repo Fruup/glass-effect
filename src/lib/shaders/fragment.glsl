@@ -71,7 +71,7 @@ void main() {
 
 	// debug: just show the texture
 #if 0
-	vec2 _uv = (i_uv + gl_FragCoord.xy) / bg_resolution;
+	vec2 _uv = i_uv + gl_FragCoord.xy / bg_resolution;
 	_uv.y = 1.0f - _uv.y;
 	outColor = vec4(texture(u_texture, _uv).rgb, 1.0f);
 	return;
@@ -119,10 +119,10 @@ void main() {
 #endif
 
 #if 0
-	vec2 uv = (i_uv + gl_FragCoord.xy) / bg_resolution;
+	vec2 uv = i_uv + (gl_FragCoord.xy) / bg_resolution;
 #else
 	// vec2 uv = (i_uv + gl_FragCoord.xy) / bg_resolution + uv_offset;
-	vec2 uv = (i_uv + gl_FragCoord.xy + 100.0f * uv_offset) / bg_resolution;
+	vec2 uv = i_uv + (gl_FragCoord.xy + 100.0f * uv_offset) / bg_resolution;
 #endif
 
 	uv.y = 1.0f - uv.y;

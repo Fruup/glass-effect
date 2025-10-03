@@ -3,6 +3,7 @@
 	import type { Config } from './config';
 	import ConfigPanel from './config-panel.svelte';
 	import GlassCanvas from './glass-canvas.svelte';
+	import { Smoothed } from './smoothed.svelte';
 
 	const canvasSize = { width: 150, height: 50 };
 
@@ -15,9 +16,29 @@
 	});
 
 	let show = $state(true);
+
+	const mousePosition = new Smoothed(
+		{ x: 0, y: 0 },
+		{ speed: 0.008, threshold: 1 / window.devicePixelRatio },
+	);
 </script>
 
+<svelte:window onmousemove={(e) => (mousePosition.target = { x: e.x, y: e.y })} />
+
 <ConfigPanel bind:config />
+
+<div
+	class="pointer-events-none fixed size-[128px] -translate-1/2 cursor-none rounded-full shadow-lg"
+	style:left="{mousePosition.current.x}px"
+	style:top="{mousePosition.current.y}px"
+>
+	<GlassCanvas
+		{config}
+		onColorSchemeChange={(scheme) => {
+			document.querySelector('#glass-button-content')?.setAttribute('data-color-scheme', scheme);
+		}}
+	/>
+</div>
 
 <div class="page">
 	of in for with as that on by from at if than about into between after because through over like
@@ -36,11 +57,6 @@
 	introduction iff diameter no. <span class="text-orange-300"
 		>ar u. bypass nf orientation afterwards ix betwixt oxide ofa preheat donor transfer thro
 		forthwith adjust asunder thereupon ip
-		<!-- <img src="https://picsum.photos/id/239/3000/3000" /> -->
-		<!-- <img src="https://picsum.photos/id/240/3000/3000" /> -->
-		<!-- <img src="https://picsum.photos/id/241/3000/3000" /> -->
-		<!-- <img src="/images/ios.png" /> -->
-
 		<img src="https://picsum.photos/id/26/4209/2769" />
 		<img src="https://picsum.photos/id/20/3670/2462" />
 		<img src="https://picsum.photos/id/36/4179/2790" />
@@ -63,16 +79,14 @@
 	amp actin inthe ac offender interface astray web fro bc nm indoor aster n.d. y. bei qf inner forgetful
 	incl. must factor fot ig frown operator icon soever wth labour jor tion oa rom interferon belief overlap
 	emperor mg amplifier aspirin superior ohn def whan box a.m.
-
-	<div>NESTED??</div>
 </div>
 
 <div data-no-capture class="pointer-events-none fixed inset-0">
-	<div class="absolute inset-4 bottom-auto h-20 rounded-full shadow-2xl">
+	<!-- <div class="absolute inset-4 bottom-auto h-20 rounded-full shadow-2xl">
 		<GlassCanvas {config} />
 
 		<div class="absolute inset-0 grid place-content-center">SOME CONTENT</div>
-	</div>
+	</div> -->
 
 	<div
 		data-no-capture
