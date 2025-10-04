@@ -1,20 +1,20 @@
 <script lang="ts">
-	import { ElementSize } from 'runed';
+	import { ElementSize, useThrottle } from 'runed';
 	import { onDestroy, onMount } from 'svelte';
 	import { setup } from '$lib/utils/opengl';
-	import { fade } from 'svelte/transition';
 	import type { Config } from './config';
 	import { cn } from '$lib/utils';
 	import { SharedState } from './state.svelte';
+	import { on } from 'svelte/events';
 
 	let {
 		config,
-		size,
 		onColorSchemeChange,
+		class: className,
 	}: {
 		config: Config;
-		size?: { width: number; height: number };
 		onColorSchemeChange?: (scheme: 'light' | 'dark') => any;
+		class?: string;
 	} = $props();
 
 	const sharedState = SharedState.get();
@@ -24,16 +24,18 @@
 	let frameId: number;
 	let ctx: ReturnType<typeof setup>;
 
+	let lastCanvasPosition = { x: 0, y: 0 };
+	let shouldComputeColorScheme = true;
+
+	const throttledSetComputeColorScheme = useThrottle(() => (shouldComputeColorScheme = true), 250);
+	$effect(() => on(window, 'scroll', () => throttledSetComputeColorScheme()));
+
+	$effect(() => {
+		canvas.width = containerSize.width * window.devicePixelRatio;
+		canvas.height = containerSize.height * window.devicePixelRatio;
+	});
+
 	onMount(async () => {
-		console.log('BEFORE', containerSize?.getSize());
-		containerSize?.calculateSize();
-		console.log('AFTER', containerSize?.getSize());
-
-		if (containerSize) {
-			canvas.width = containerSize.width * window.devicePixelRatio;
-			canvas.height = containerSize.height * window.devicePixelRatio;
-		}
-
 		if (!canvas) throw new Error('Canvas not found');
 		ctx = setup(canvas);
 
@@ -43,6 +45,10 @@
 
 	function renderLoop() {
 		frameId = requestAnimationFrame(() => {
+			const containerStyle = getComputedStyle(container);
+
+			const borderRadius = parseFloat(containerStyle.borderRadius.slice(0, -2));
+
 			const canvasRect = canvas.getBoundingClientRect();
 			const bodyRect = {
 				width: document.body.clientWidth,
@@ -52,6 +58,12 @@
 			ctx.setUV(
 				(window.scrollX + canvasRect.x) / bodyRect.width,
 				(bodyRect.height - (window.scrollY + canvasRect.y + canvasRect.height)) / bodyRect.height,
+			);
+
+			ctx.gl.uniform2f(
+				ctx.gl.getUniformLocation(ctx.program, 'i_resolution'),
+				canvas.width,
+				canvas.height,
 			);
 
 			ctx.gl.uniform4f(
@@ -65,24 +77,30 @@
 			);
 
 			ctx.gl.uniform1f(
-				ctx.gl.getUniformLocation(ctx.program, 'i_lense_flatness'),
-				config.lenseFlatness,
+				ctx.gl.getUniformLocation(ctx.program, 'i_border_radius'),
+				Math.max(0, Math.min(1, borderRadius / Math.min(canvasRect.width, canvasRect.height))),
 			);
-
-			// ctx.gl.uniform1f(
-			// 	ctx.gl.getUniformLocation(ctx.program, 'i_lense_height'),
-			// 	config.lenseHeight,
-			// );
 
 			ctx.gl.uniform1i(ctx.gl.getUniformLocation(ctx.program, 'i_blur_radius'), config.blurRadius);
 
 			ctx.draw();
 
-			if (sharedState.getAndResetShouldComputeColorScheme()) {
+			if (
+				shouldComputeColorScheme ||
+				lastCanvasPosition.x !== canvasRect.x ||
+				lastCanvasPosition.y !== canvasRect.y
+			) {
+				shouldComputeColorScheme = false;
+
 				const img = new Image();
 				img.onload = () => computeColorScheme(img);
 				img.src = canvas.toDataURL();
 			}
+
+			lastCanvasPosition = {
+				x: canvasRect.x,
+				y: canvasRect.y,
+			};
 
 			renderLoop();
 		});
@@ -125,32 +143,19 @@
 
 	let container = $state() as HTMLDivElement;
 
-	const containerSize = !size ? new ElementSize(() => container) : null;
-
-	const canvasSize: { width: number; height: number } = $derived(
-		size ? size : containerSize!.getSize(),
-	);
+	const containerSize = new ElementSize(() => container);
 </script>
 
 <div
+	data-no-capture
 	bind:this={container}
-	class={cn(
-		'relative overflow-clip rounded-full *:transition-opacity *:duration-500',
-		size ? 'size-fit' : 'size-full',
-	)}
+	class={cn('size-full', !sharedState.loaded && 'backdrop-blur-xs', className)}
 >
 	<canvas
 		bind:this={canvas}
-		width={canvasSize.width * window.devicePixelRatio}
-		height={canvasSize.height * window.devicePixelRatio}
-		style="width: {canvasSize.width}px; height: {canvasSize.height}px"
+		width={containerSize.width * window.devicePixelRatio}
+		height={containerSize.height * window.devicePixelRatio}
+		class="size-full transition-opacity duration-500"
 		style:opacity={sharedState.loaded ? 1 : 0}
 	></canvas>
-
-	{#if !sharedState.loaded}
-		<div
-			class="pointer-events-none absolute inset-0 backdrop-blur-xs"
-			transition:fade={{ duration: 500 }}
-		></div>
-	{/if}
 </div>

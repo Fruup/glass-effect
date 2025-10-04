@@ -11,6 +11,7 @@
 </script>
 
 <div
+	data-no-capture
 	class="fixed right-0 bottom-0 m-4 rounded-xl border bg-white p-4 opacity-10 shadow-xl transition-opacity hover:opacity-100"
 >
 	<Label>
@@ -51,16 +52,4 @@
 		<Slider type="single" bind:value={config.backgroundColorMix} min={0} max={1} step={0.001} />
 		{Math.round(config.backgroundColorMix * 100)}%
 	</Label>
-
-	<Label>
-		Lense Flatness
-		<Slider type="single" bind:value={config.lenseFlatness} min={0} max={30} step={0.001} />
-		{config.lenseFlatness}
-	</Label>
-
-	<!-- <Label>
-		Lense Height
-		<Slider type="single" bind:value={config.lenseHeight} min={0} max={1} step={0.001} />
-		{config.lenseHeight}
-	</Label> -->
 </div>

@@ -1,12 +1,10 @@
 import { toJpeg } from 'html-to-image';
-import { useDebounce, useThrottle } from 'runed';
+import { useDebounce } from 'runed';
 import { on } from 'svelte/events';
 
 export class SharedState {
 	#loaded = $state(false);
 	#backgroundImage: HTMLImageElement | undefined = $state();
-
-	#shouldComputeColorScheme = false;
 
 	private constructor() {
 		const renderImage = useDebounce(this.#renderImage.bind(this), 1000);
@@ -14,13 +12,6 @@ export class SharedState {
 		if (document.readyState === 'complete') renderImage();
 		$effect(() => on(window, 'load', renderImage));
 		$effect(() => on(window, 'resize', renderImage));
-
-		const throttledSetComputeColorScheme = useThrottle(
-			() => (this.#shouldComputeColorScheme = true),
-			250,
-		);
-		$effect(() => on(window, 'scroll', throttledSetComputeColorScheme));
-		throttledSetComputeColorScheme();
 	}
 
 	static get() {
@@ -51,7 +42,6 @@ export class SharedState {
 		this.#backgroundImage = img;
 
 		this.#loaded = true;
-		this.#shouldComputeColorScheme = true;
 	}
 
 	get backgroundImage() {
@@ -61,32 +51,6 @@ export class SharedState {
 	get loaded() {
 		return this.#loaded;
 	}
-
-	getAndResetShouldComputeColorScheme() {
-		const value = this.#shouldComputeColorScheme;
-		this.#shouldComputeColorScheme = false;
-		return value;
-	}
 }
 
 let sharedState: SharedState | undefined;
-
-// new MutationObserver(async () => {
-// 	// Wait for all images to be loaded
-// 	await Promise.all(
-// 		Array.from(document.querySelectorAll<HTMLImageElement>('img')).map(async (img) => {
-// 			if (img.complete) return;
-
-// 			const { resolve, promise } = Promise.withResolvers<void>();
-// 			img.onload = () => resolve();
-
-// 			return promise;
-// 		}),
-// 	);
-
-// 	resetImage();
-// }).observe(document.body, {
-// 	subtree: true,
-// 	childList: true,
-// 	characterData: true,
-// });

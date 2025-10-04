@@ -5,14 +5,10 @@
 	import GlassCanvas from './glass-canvas.svelte';
 	import { Smoothed } from './smoothed.svelte';
 
-	const canvasSize = { width: 150, height: 50 };
-
 	let config = $state<Config>({
 		backgroundColor: [1, 1, 1, 1],
 		backgroundColorMix: 0.5,
 		blurRadius: 2,
-		lenseFlatness: 15,
-		// lenseHeight: 1,
 	});
 
 	let show = $state(true);
@@ -23,21 +19,16 @@
 	);
 </script>
 
-<svelte:window onmousemove={(e) => (mousePosition.target = { x: e.x, y: e.y })} />
+<svelte:window onmousemove={(e) => mousePosition.set({ x: e.x, y: e.y })} />
 
 <ConfigPanel bind:config />
 
 <div
-	class="pointer-events-none fixed size-[128px] -translate-1/2 cursor-none rounded-full shadow-lg"
+	class="pointer-events-none fixed size-[128px] -translate-1/2 cursor-none"
 	style:left="{mousePosition.current.x}px"
 	style:top="{mousePosition.current.y}px"
 >
-	<GlassCanvas
-		{config}
-		onColorSchemeChange={(scheme) => {
-			document.querySelector('#glass-button-content')?.setAttribute('data-color-scheme', scheme);
-		}}
-	/>
+	<GlassCanvas class="rounded-full shadow-lg" {config} />
 </div>
 
 <div class="page">
@@ -82,12 +73,6 @@
 </div>
 
 <div data-no-capture class="pointer-events-none fixed inset-0">
-	<!-- <div class="absolute inset-4 bottom-auto h-20 rounded-full shadow-2xl">
-		<GlassCanvas {config} />
-
-		<div class="absolute inset-0 grid place-content-center">SOME CONTENT</div>
-	</div> -->
-
 	<div
 		data-no-capture
 		class="pointer-events-none absolute inset-0 grid place-content-center *:pointer-events-auto"
@@ -95,7 +80,7 @@
 		{#if show}
 			<button
 				transition:vanish={{ duration: 500 }}
-				class="group relative w-fit transition-all hover:scale-105"
+				class="group relative grid place-content-center p-4 transition-all hover:scale-105"
 				onclick={() => {
 					show = false;
 					setTimeout(() => {
@@ -105,7 +90,7 @@
 			>
 				<GlassCanvas
 					{config}
-					size={canvasSize}
+					class="absolute inset-0 rounded-full border-[0.5px] border-zinc-100 shadow-lg"
 					onColorSchemeChange={(scheme) => {
 						document
 							.querySelector('#glass-button-content')
@@ -115,7 +100,7 @@
 
 				<div
 					id="glass-button-content"
-					class="absolute inset-0 grid place-content-center rounded-full border-[0.5px] border-zinc-100 font-[SUSE_Mono] shadow-lg transition-colors duration-500 data-[color-scheme=dark]:text-zinc-100 data-[color-scheme=light]:text-zinc-700"
+					class="z-10 transition-colors duration-500 data-[color-scheme=dark]:text-zinc-100 data-[color-scheme=light]:text-zinc-700"
 				>
 					Hello World!
 				</div>
@@ -123,7 +108,3 @@
 		{/if}
 	</div>
 </div>
-
-<style>
-	@import url('https://fonts.googleapis.com/css2?family=SUSE+Mono:ital,wght@0,100..800;1,100..800&display=swap');
-</style>
