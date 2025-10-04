@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { vanish } from '$lib/utils/index.svelte';
-	import type { Config } from './config';
-	import ConfigPanel from './config-panel.svelte';
-	import GlassCanvas from './glass-canvas.svelte';
-	import { Smoothed } from './smoothed.svelte';
+	import type { Config } from '$lib';
+	import ConfigPanel from '$lib/components/glass-effect/config-panel.svelte';
+	import GlassCanvas from '$lib/components/glass-effect/glass-canvas.svelte';
+	import { Smoothed } from '$lib/utils/smoothed.svelte';
 
 	let config = $state<Config>({
 		backgroundColor: [1, 1, 1, 1],
