@@ -84,9 +84,6 @@ vec3 lense_normal_1(
 	float end_angle,
 	out bool is_inside
 ) {
-	// TODO
-	is_inside = true;
-
 	vec2 point_on_border = project_onto_border(r, bounds, border_radius);
 
 	float t = length(r) / length(point_on_border);
@@ -98,6 +95,8 @@ vec3 lense_normal_1(
 		is_inside = false;
 		return vec3(0.0f);
 	}
+
+	is_inside = true;
 
 	float angle = 0.5f * PI * end_angle * pow(t, exponent);
 
